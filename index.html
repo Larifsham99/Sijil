@@ -1,0 +1,799 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Penjana Sijil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cinzel:wght@400;700&family=Dancing+Script:wght@600&family=Great+Vibes&family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap">
+<script src="lib/html2canvas.min.js"></script>
+<script src="lib/jspdf.umd.min.js"></script>
+<script src="lib/jszip.min.js"></script>
+<style>
+/* Susun atur: panel kawalan di kiri, pratonton sijil di kanan. */
+:root{
+  --ink:#1c2a27; --muted:#5c6b66; --line:#d8e0dc; --panel:#ffffff; --bg:#e9eeeb;
+  --accent:#0f5c4d; --accent-ink:#ffffff; --gold:#b8892b; --danger:#b3261e; --sel:#2f7cf6;
+  --ui:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:14px/1.45 var(--ui);color:var(--ink);background:var(--bg);display:flex;flex-direction:column}
+button{font:inherit}
+header.top{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--accent);color:var(--accent-ink);flex-wrap:wrap}
+header.top h1{font:700 17px var(--ui);margin:0 auto 0 0;letter-spacing:.02em;display:flex;align-items:center;gap:10px}
+header.top h1 small{font-weight:400;opacity:.75;font-size:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:7px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn:focus-visible,.tab:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
+.btn.primary{background:var(--gold);border-color:var(--gold);color:#fff}
+.btn.ghost{background:transparent;color:inherit;border-color:rgba(255,255,255,.4)}
+.btn.small{padding:4px 8px;font-size:12px}
+.btn.danger{color:var(--danger)}
+.btn.danger.armed{background:var(--danger);color:#fff;border-color:var(--danger)}
+.app{flex:1;display:grid;grid-template-columns:390px 1fr;min-height:0}
+aside.panel{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line)}
+.tab{padding:9px 4px;border:0;background:none;cursor:pointer;font-weight:600;font-size:13px;color:var(--muted);border-bottom:2px solid transparent}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);background:#f4f8f6}
+.tabbody{overflow:auto;padding:14px;flex:1}
+.tabbody h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:4px 0 10px}
+.hint{font-size:12px;color:var(--muted);margin:0 0 10px}
+.hint code{background:#eef3f0;padding:1px 4px;border-radius:4px;font-size:11.5px}
+.card{border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:10px;background:#fff}
+.card.selected{border-color:var(--sel);box-shadow:0 0 0 2px rgba(47,124,246,.18)}
+details.card>summary{cursor:pointer;font-weight:600;list-style:none;display:flex;align-items:center;gap:8px}
+details.card>summary::before{content:'▸';color:var(--muted);transition:transform .15s}
+details.card[open]>summary::before{transform:rotate(90deg)}
+details.card[open]>summary{margin-bottom:10px}
+summary .tag{margin-left:auto;font-weight:400;font-size:11px;color:var(--muted)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted);margin-bottom:8px;min-width:0}
+input,select,textarea{font:inherit;font-size:13px;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:#fff;width:100%;min-width:0}
+textarea{resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid rgba(47,124,246,.35);border-color:var(--sel)}
+input[type=color]{padding:2px;height:32px;cursor:pointer}
+input[type=range]{padding:0;accent-color:var(--accent)}
+.rng{display:grid;grid-template-columns:1fr 64px;gap:6px;align-items:center}
+.chk{flex-direction:row!important;align-items:center;gap:6px;color:var(--ink)!important;font-size:13px!important}
+.chk input{width:auto}
+.checks{display:flex;flex-wrap:wrap;gap:4px 14px;margin-bottom:8px}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.thumb{width:56px;height:56px;object-fit:contain;border:1px solid var(--line);border-radius:6px;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/12px 12px}
+.people{display:flex;flex-direction:column;gap:6px}
+.person{display:grid;grid-template-columns:26px 1fr 1fr 26px;gap:4px;align-items:center;padding:4px;border-radius:6px}
+.person.cur{background:#eaf2ff}
+.person .no{font-size:11px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.person .nm{grid-column:2/4}
+.person .del{grid-row:1;grid-column:4;border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px}
+.person .del:hover{color:var(--danger)}
+.person input{padding:4px 6px;font-size:12.5px}
+.person .ic{grid-column:2}.person .jw{grid-column:3}
+.stage{display:flex;flex-direction:column;min-width:0;min-height:0}
+.stagebar{display:flex;gap:8px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--line);background:#f6f8f7;flex-wrap:wrap}
+.stagebar .who{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px}
+.stagebar .tip{margin-left:auto;font-size:12px;color:var(--muted)}
+#viewport{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:24px;min-height:0}
+#certWrap{position:relative;box-shadow:0 12px 32px rgba(20,40,35,.18);flex:none}
+#guideV{position:absolute;top:0;bottom:0;left:50%;width:0;border-left:1px dashed #e0457b;pointer-events:none;z-index:5}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:100;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:90vw}
+.overlay{position:fixed;inset:0;background:rgba(20,30,28,.55);display:flex;align-items:center;justify-content:center;z-index:90}
+.overlay .box{background:#fff;padding:22px 26px;border-radius:10px;min-width:280px;text-align:center}
+.overlay progress{width:100%;margin-top:10px}
+
+/* ---------- Sijil ---------- */
+.cert{position:relative;overflow:hidden;transform-origin:0 0;background:var(--bgc)}
+.cert .bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cert .fr{position:absolute;pointer-events:none}
+.cert .el{position:absolute;transform:translate(-50%,-50%);white-space:normal;overflow-wrap:break-word}
+.cert .logo{height:auto;display:block}
+.cert .ph{border:2px dashed #9aa8a3;color:#7d8b86;display:flex;align-items:center;justify-content:center;font:600 13px var(--ui);aspect-ratio:1/1;border-radius:50%}
+.cert .sign{text-align:center}
+.cert .sign .simg{display:block;margin:0 auto;max-width:100%;object-fit:contain}
+.cert .sign .sph{border:1.5px dashed #b6c0bc;color:#98a5a0;display:flex;align-items:center;justify-content:center;font:500 12px var(--ui);margin:0 auto;width:70%}
+.cert .sign .sline{border-top:1.5px solid currentColor;margin:4px auto 6px;width:100%}
+.cert .sign .snm{font-weight:700}
+.editable .el{cursor:move;touch-action:none;user-select:none}
+.editable .el:hover{outline:1px dashed rgba(47,124,246,.7);outline-offset:3px}
+.editable .el.sel{outline:2px solid var(--sel);outline-offset:3px}
+
+#offscreen{position:absolute;left:-30000px;top:0}
+#printArea{display:none}
+
+@media (max-width:900px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto auto}
+  aside.panel{order:2;border-right:0;border-top:1px solid var(--line)}
+  .stage{order:1;min-height:60vh}
+  body{height:auto}
+}
+@media print{
+  html,body{height:auto;background:#fff;display:block}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block}
+  #printArea .cert{break-after:page;page-break-after:always}
+  #printArea .cert:last-child{break-after:auto;page-break-after:auto}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style id="pageStyle">@page{size:A4 landscape;margin:0}</style>
+</head>
+<body>
+<header class="top">
+  <h1>Penjana Sijil <small>Sijil tersuai, cetak beramai-ramai</small></h1>
+  <button class="btn ghost" id="btnLoadTpl" title="Buka fail templat .json">Buka Templat</button>
+  <button class="btn ghost" id="btnSaveTpl" title="Simpan reka bentuk & senarai ke fail .json">Simpan Templat</button>
+  <button class="btn" id="btnPrint">Cetak Semua</button>
+  <button class="btn" id="btnZip">PDF Berasingan (ZIP)</button>
+  <button class="btn primary" id="btnPdf">Muat Turun PDF</button>
+  <input type="file" id="tplFile" accept=".json,application/json" hidden>
+</header>
+<div class="app">
+  <aside class="panel">
+    <nav class="tabs" id="tabs">
+      <button class="tab" data-tab="info">Maklumat</button>
+      <button class="tab" data-tab="peserta">Peserta</button>
+      <button class="tab" data-tab="teks">Teks</button>
+      <button class="tab" data-tab="logo">Logo</button>
+      <button class="tab" data-tab="ttd">Tandatangan</button>
+      <button class="tab" data-tab="latar">Latar &amp; Bingkai</button>
+    </nav>
+    <div class="tabbody" id="tabbody"></div>
+  </aside>
+  <section class="stage">
+    <div class="stagebar">
+      <button class="btn small" id="prev" aria-label="Peserta sebelum">‹</button>
+      <span class="who" id="who"></span>
+      <button class="btn small" id="next" aria-label="Peserta seterusnya">›</button>
+      <span class="tip">Klik &amp; seret elemen untuk ubah kedudukan · Anak panah untuk laras halus (Shift = lebih jauh)</span>
+    </div>
+    <div id="viewport"><div id="certWrap"></div></div>
+  </section>
+</div>
+<div id="offscreen"></div>
+<div id="printArea"></div>
+
+<script>
+'use strict';
+/* ================= Utiliti ================= */
+const $ = (s, r = document) => r.querySelector(s);
+const uid = () => Math.random().toString(36).slice(2, 9);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function h(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'style') e.style.cssText = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  kids.flat().forEach(k => { if (k != null && k !== false) e.append(k.nodeType ? k : document.createTextNode(k)); });
+  return e;
+}
+function toast(msg, ms = 2600) {
+  const t = h('div', {class: 'toast', role: 'status'}, msg);
+  document.body.append(t); setTimeout(() => t.remove(), ms);
+}
+function download(blob, name) {
+  const a = h('a', {href: URL.createObjectURL(blob), download: name});
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+const slug = s => (String(s || 'sijil').normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').slice(0, 60) || 'sijil');
+/* Butang yang perlu diklik dua kali untuk sahkan */
+function armed(btn, label, fn) {
+  let t;
+  btn.addEventListener('click', () => {
+    if (btn.classList.contains('armed')) { clearTimeout(t); btn.classList.remove('armed'); btn.textContent = label; fn(); return; }
+    btn.classList.add('armed'); btn.textContent = 'Klik sekali lagi untuk sahkan';
+    t = setTimeout(() => { btn.classList.remove('armed'); btn.textContent = label; }, 3000);
+  });
+  return btn;
+}
+
+/* ================= Keadaan (state) ================= */
+const FONTS = ['Cinzel', 'Playfair Display', 'Lora', 'Montserrat', 'Inter', 'Great Vibes', 'Dancing Script', 'Amiri', 'Times New Roman', 'Arial'];
+const ff = f => `'${f}', ${/Vibes|Script/.test(f) ? 'cursive' : /Montserrat|Inter|Arial/.test(f) ? 'sans-serif' : 'serif'}`;
+const SIZES = {landscape: [1122, 793], portrait: [793, 1122]};
+const dims = () => SIZES[S.orientation] || SIZES.landscape;
+
+function fld(o) {
+  return Object.assign({id: uid(), label: 'Teks', text: 'Teks baru', x: 50, y: 50, w: 80, size: 18, font: 'Lora',
+    bold: false, italic: false, upper: false, color: '#1c2a27', align: 'center', ls: 0, lh: 1.3, visible: true, custom: false}, o);
+}
+function defaults() {
+  return {
+    v: 1, orientation: 'landscape', border: 'klasik', borderColor: '#b8892b', bgColor: '#fffdf6', bgImage: null,
+    perkara: 'Program Kem Motivasi Pelajar 2026', tarikh: '24 November 2026', tempat: 'Dewan Utama', siriPrefix: 'SJL/2026/',
+    fields: [
+      fld({id: 'tajuk', label: 'Tajuk', text: 'SIJIL PENGHARGAAN', y: 27, w: 86, size: 50, font: 'Cinzel', bold: true, color: '#0f5c4d', ls: 4, lh: 1.15}),
+      fld({id: 'intro', label: 'Ayat pembuka', text: 'Dengan ini disahkan bahawa', y: 36.5, size: 19, italic: true, color: '#3b4a46'}),
+      fld({id: 'nama', label: 'Nama', text: '{nama}', y: 45.5, w: 90, size: 50, font: 'Great Vibes', color: '#1c2a27', lh: 1.1}),
+      fld({id: 'ic', label: 'No. K/P', text: 'No. K/P: {ic}', y: 53.5, size: 16, font: 'Montserrat', color: '#3b4a46'}),
+      fld({id: 'jawatan', label: 'Jawatan', text: '{jawatan}', y: 58.5, size: 17, font: 'Montserrat', bold: true, upper: true, ls: 2, color: '#0f5c4d'}),
+      fld({id: 'perkara', label: 'Perkara', text: 'atas penyertaan dan sumbangan dalam\n**{perkara}**', y: 67, size: 19, color: '#1c2a27'}),
+      fld({id: 'tarikh', label: 'Tarikh & tempat', text: '{tarikh}  •  {tempat}', y: 75, size: 14, font: 'Montserrat', color: '#5c6b66'}),
+      fld({id: 'siri', label: 'No. siri', text: 'No. Siri: {siri}', x: 90, y: 94, w: 20, size: 10, font: 'Montserrat', color: '#8a9792', align: 'right', visible: false}),
+    ],
+    logos: [{id: uid(), src: null, x: 50, y: 12.5, w: 9, op: 1}],
+    signs: [{id: uid(), src: null, x: 50, y: 85, w: 26, imgH: 62, nama: 'Ustaz Nama Mudir', jawatan: 'Mudir', org: 'Nama Institusi',
+             size: 15, font: 'Montserrat', color: '#1c2a27', line: true}],
+    people: [
+      {nama: 'Ahmad Faris bin Ismail', ic: '080512-03-1234', jawatan: 'Peserta'},
+      {nama: 'Nur Aisyah binti Rahman', ic: '090221-11-5678', jawatan: 'Fasilitator'},
+      {nama: 'Muhammad Hakim bin Zulkifli', ic: '070930-02-9012', jawatan: 'Ketua Kumpulan'},
+    ],
+  };
+}
+const KEY = 'penjana-sijil-v1';
+let S = load();
+let tab = 'info', cur = 0, sel = null, scale = 1, saveTimer, warnedStorage = false;
+const openCards = new Set(), autoOpened = new Set();
+function autoOpen(list) { if (list.length === 1 && !autoOpened.has(list[0].id)) { autoOpened.add(list[0].id); openCards.add(list[0].id); } }
+
+function merge(d) {
+  const base = defaults();
+  if (!d || typeof d !== 'object') return base;
+  const out = Object.assign(base, d);
+  out.fields = (d.fields || base.fields).map(f => fld(f));
+  out.logos = Array.isArray(d.logos) ? d.logos : base.logos;
+  out.signs = Array.isArray(d.signs) ? d.signs : base.signs;
+  out.people = Array.isArray(d.people) ? d.people : base.people;
+  return out;
+}
+function load() { try { const r = localStorage.getItem(KEY); if (r) return merge(JSON.parse(r)); } catch (e) {} return defaults(); }
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(KEY, JSON.stringify(S)); }
+    catch (e) { if (!warnedStorage) { warnedStorage = true; toast('Storan pelayar penuh — guna "Simpan Templat" untuk simpan kerja anda.', 5000); } }
+  }, 400);
+}
+function changed() { renderPreview(); scheduleSave(); }
+
+/* ================= Gambar ================= */
+function readImage(file, {max = 800, removeWhite = false, jpeg = false} = {}) {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onerror = rej;
+    fr.onload = () => {
+      const img = new Image();
+      img.onerror = () => rej(new Error('Fail bukan gambar yang sah'));
+      img.onload = () => {
+        const k = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        const x = c.getContext('2d');
+        x.drawImage(img, 0, 0, c.width, c.height);
+        if (removeWhite) {
+          const d = x.getImageData(0, 0, c.width, c.height), p = d.data;
+          for (let i = 0; i < p.length; i += 4) {
+            const lum = (p[i] + p[i + 1] + p[i + 2]) / 3;
+            if (lum > 215) p[i + 3] = 0;
+            else if (lum > 170) p[i + 3] = Math.round(p[i + 3] * (215 - lum) / 45);
+          }
+          x.putImageData(d, 0, 0);
+        }
+        res(jpeg ? c.toDataURL('image/jpeg', 0.88) : c.toDataURL('image/png'));
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+function pickFile(accept, cb, multiple = false) {
+  const i = h('input', {type: 'file', accept, multiple});
+  i.addEventListener('change', () => { if (i.files.length) cb([...i.files]); });
+  i.click();
+}
+
+/* ================= Render sijil ================= */
+function fill(t, p, i) {
+  const map = {nama: p.nama, ic: p.ic, jawatan: p.jawatan, perkara: S.perkara, tarikh: S.tarikh, tempat: S.tempat,
+               bil: String(i + 1), siri: (S.siriPrefix || '') + String(i + 1).padStart(3, '0')};
+  return esc(t).replace(/\{(\w+)\}/g, (m, k) => k in map ? esc(map[k]) : m)
+    .replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+}
+const FRAMES = {
+  klasik: c => [`inset:22px;border:7px double ${c}`, `inset:40px;border:1px solid ${c}`],
+  elegan: c => [`inset:18px;border:2px solid ${c}`, `inset:28px;border:1px solid ${c}`, ...cornerSq(c)],
+  moden: c => [`left:0;right:0;top:0;height:24px;background:${c}`, `left:0;right:0;bottom:0;height:10px;background:${c}`,
+    `inset:44px;border:1px solid ${c};opacity:.55`],
+  tebal: c => [`inset:0;border:24px solid ${c}`, `inset:34px;border:2px solid ${c}`],
+  garis: c => [`inset:30px;border:1.5px solid ${c}`],
+  tiada: () => [],
+};
+function cornerSq(c) {
+  const s = `width:30px;height:30px;border:2px solid ${c};background:var(--bgc);transform:rotate(45deg)`;
+  return [`top:8px;left:8px;${s}`, `top:8px;right:8px;${s}`, `bottom:8px;left:8px;${s}`, `bottom:8px;right:8px;${s}`];
+}
+
+function renderCert(p, i, editable) {
+  const [W, H] = dims();
+  const c = h('div', {class: 'cert' + (editable ? ' editable' : ''), style: `width:${W}px;height:${H}px;--bgc:${S.bgColor}`});
+  if (S.bgImage) c.append(h('img', {class: 'bgimg', src: S.bgImage, alt: ''}));
+  (FRAMES[S.border] || FRAMES.klasik)(S.borderColor).forEach(st => c.append(h('div', {class: 'fr', style: st})));
+
+  S.logos.forEach(l => {
+    const st = `left:${l.x}%;top:${l.y}%;width:${l.w}%;opacity:${l.op ?? 1}`;
+    if (l.src) c.append(h('img', {class: 'el logo', src: l.src, alt: 'Logo', style: st, 'data-kind': 'logo', 'data-id': l.id, draggable: 'false'}));
+    else if (editable) c.append(h('div', {class: 'el logo ph', style: st, 'data-kind': 'logo', 'data-id': l.id}, 'LOGO'));
+  });
+
+  S.fields.filter(f => f.visible).forEach(f => {
+    const d = h('div', {class: 'el', 'data-kind': 'field', 'data-id': f.id, style:
+      `left:${f.x}%;top:${f.y}%;width:${f.w}%;font-family:${ff(f.font)};font-size:${f.size}px;color:${f.color};` +
+      `font-weight:${f.bold ? 700 : 400};font-style:${f.italic ? 'italic' : 'normal'};text-align:${f.align};` +
+      `letter-spacing:${f.ls || 0}px;line-height:${f.lh || 1.3};text-transform:${f.upper ? 'uppercase' : 'none'}`});
+    d.innerHTML = fill(f.text, p, i);
+    c.append(d);
+  });
+
+  S.signs.forEach(s => {
+    const b = h('div', {class: 'el sign', 'data-kind': 'sign', 'data-id': s.id,
+      style: `left:${s.x}%;top:${s.y}%;width:${s.w}%;font-family:${ff(s.font)};font-size:${s.size}px;color:${s.color};line-height:1.3`});
+    if (s.src) b.append(h('img', {class: 'simg', src: s.src, alt: 'Tandatangan', draggable: 'false', style: `height:${s.imgH}px`}));
+    else if (editable) b.append(h('div', {class: 'sph', style: `height:${s.imgH}px`}, 'Tandatangan'));
+    else b.append(h('div', {style: `height:${s.imgH}px`}));
+    if (s.line) b.append(h('div', {class: 'sline'}));
+    if (s.nama) b.append(h('div', {class: 'snm'}, s.nama));
+    if (s.jawatan) b.append(h('div', {style: 'font-size:.92em'}, s.jawatan));
+    if (s.org) b.append(h('div', {style: 'font-size:.85em;opacity:.85'}, s.org));
+    c.append(b);
+  });
+  return c;
+}
+
+const SAMPLE = {nama: 'Nama Peserta', ic: '000000-00-0000', jawatan: 'Jawatan'};
+const person = i => S.people[i] || SAMPLE;
+
+function renderPreview() {
+  const [W, H] = dims();
+  const vp = $('#viewport'), wrap = $('#certWrap');
+  cur = Math.max(0, Math.min(cur, S.people.length - 1));
+  const avW = vp.clientWidth - 48, avH = vp.clientHeight - 48;
+  scale = Math.max(0.15, Math.min(avW / W, (avH > 200 ? avH : avW) / H, 1.2));
+  const c = renderCert(person(cur), cur, true);
+  c.style.transform = `scale(${scale})`;
+  wrap.style.width = W * scale + 'px'; wrap.style.height = H * scale + 'px';
+  wrap.replaceChildren(c, h('div', {id: 'guideV', hidden: true}));
+  markSel();
+  const n = S.people.length;
+  $('#who').textContent = n ? `${cur + 1} / ${n} · ${person(cur).nama || '(tanpa nama)'}` : 'Tiada peserta — pratonton contoh';
+  document.querySelectorAll('.person').forEach(r => r.classList.toggle('cur', +r.dataset.i === cur));
+}
+function markSel() {
+  document.querySelectorAll('#certWrap .el').forEach(e =>
+    e.classList.toggle('sel', !!sel && e.dataset.kind === sel.kind && e.dataset.id === sel.id));
+}
+function findObj(kind, id) {
+  const list = kind === 'field' ? S.fields : kind === 'logo' ? S.logos : S.signs;
+  return list.find(o => o.id === id);
+}
+
+/* ================= Seret & lepas ================= */
+let drag = null;
+$('#viewport').addEventListener('pointerdown', e => {
+  const el = e.target.closest('.cert.editable .el');
+  if (!el) { if (e.target.closest('.cert')) { sel = null; markSel(); } return; }
+  e.preventDefault();
+  const obj = findObj(el.dataset.kind, el.dataset.id); if (!obj) return;
+  select(el.dataset.kind, el.dataset.id);
+  drag = {el, obj, sx: e.clientX, sy: e.clientY, ox: obj.x, oy: obj.y};
+  el.setPointerCapture(e.pointerId);
+});
+window.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const [W, H] = dims();
+  let nx = drag.ox + (e.clientX - drag.sx) / (W * scale) * 100;
+  let ny = drag.oy + (e.clientY - drag.sy) / (H * scale) * 100;
+  const g = $('#guideV'), snap = Math.abs(nx - 50) < 0.8;
+  if (snap) nx = 50;
+  if (g) g.hidden = !snap;
+  setPos(drag.obj, drag.el, nx, ny);
+});
+window.addEventListener('pointerup', () => { if (drag) { drag = null; const g = $('#guideV'); if (g) g.hidden = true; scheduleSave(); } });
+function setPos(obj, el, x, y) {
+  obj.x = Math.round(Math.max(0, Math.min(100, x)) * 10) / 10;
+  obj.y = Math.round(Math.max(0, Math.min(100, y)) * 10) / 10;
+  if (el) { el.style.left = obj.x + '%'; el.style.top = obj.y + '%'; }
+  document.querySelectorAll(`[data-bind="${obj.id}.x"]`).forEach(i => i.value = obj.x);
+  document.querySelectorAll(`[data-bind="${obj.id}.y"]`).forEach(i => i.value = obj.y);
+}
+document.addEventListener('keydown', e => {
+  if (!sel || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  const d = e.shiftKey ? 1 : 0.2, m = {ArrowLeft: [-d, 0], ArrowRight: [d, 0], ArrowUp: [0, -d], ArrowDown: [0, d]}[e.key];
+  if (!m) return;
+  e.preventDefault();
+  const o = findObj(sel.kind, sel.id); if (!o) return;
+  setPos(o, $(`#certWrap .el[data-kind="${sel.kind}"][data-id="${sel.id}"]`), o.x + m[0], o.y + m[1]);
+  scheduleSave();
+});
+function select(kind, id) {
+  sel = {kind, id};
+  markSel();
+  openCards.add(id);
+  const t = {field: 'teks', logo: 'logo', sign: 'ttd'}[kind];
+  if (tab !== t) setTab(t); else renderPanel();
+  const card = document.querySelector(`[data-card="${id}"]`);
+  if (card) card.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+}
+
+/* ================= Kawalan panel ================= */
+function ctl(obj, key, label, type = 'text', o = {}) {
+  let inp;
+  if (type === 'textarea') inp = h('textarea', {rows: o.rows || 2});
+  else if (type === 'select') inp = h('select', {}, o.options.map(op => { const [v, t] = Array.isArray(op) ? op : [op, op]; return h('option', {value: v}, t); }));
+  else if (type === 'check') { inp = h('input', {type: 'checkbox'}); inp.checked = !!obj[key]; }
+  else inp = h('input', {type, min: o.min, max: o.max, step: o.step, placeholder: o.ph});
+  if (type !== 'check') inp.value = obj[key] ?? '';
+  if (o.bind) inp.dataset.bind = o.bind;
+  inp.addEventListener('input', () => {
+    let v = type === 'check' ? inp.checked : type === 'number' ? parseFloat(inp.value) : inp.value;
+    if (type === 'number' && isNaN(v)) return;
+    obj[key] = v; o.after && o.after(v); changed();
+  });
+  if (type === 'check') return h('label', {class: 'f chk'}, inp, label);
+  return h('label', {class: 'f'}, label, inp);
+}
+function rng(obj, key, label, min, max, step = 1, o = {}) {
+  const r = h('input', {type: 'range', min, max, step}), n = h('input', {type: 'number', min, max, step});
+  r.value = n.value = obj[key];
+  if (o.bind) n.dataset.bind = r.dataset.bind = o.bind;
+  const set = (v, src) => { v = parseFloat(v); if (isNaN(v)) return; obj[key] = v; if (src !== r) r.value = v; if (src !== n) n.value = v; changed(); };
+  r.addEventListener('input', () => set(r.value, r)); n.addEventListener('input', () => set(n.value, n));
+  return h('label', {class: 'f'}, label, h('div', {class: 'rng'}, r, n));
+}
+const pos = o => h('div', {class: 'row'},
+  ctl(o, 'x', 'Kedudukan X (%)', 'number', {step: 0.1, bind: o.id + '.x'}),
+  ctl(o, 'y', 'Kedudukan Y (%)', 'number', {step: 0.1, bind: o.id + '.y'}));
+function card(id, title, tag, body) {
+  const d = h('details', {class: 'card' + (sel && sel.id === id ? ' selected' : ''), 'data-card': id, open: openCards.has(id)},
+    h('summary', {}, title, tag ? h('span', {class: 'tag'}, tag) : null), ...body);
+  d.addEventListener('toggle', () => { d.open ? openCards.add(id) : openCards.delete(id); });
+  return d;
+}
+
+function setTab(t) {
+  tab = t;
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  renderPanel();
+  try { localStorage.setItem(KEY + '-tab', t); } catch (e) {}
+}
+function renderPanel() {
+  const b = $('#tabbody'), y = b.scrollTop;
+  b.replaceChildren(...(PANELS[tab] || PANELS.info)().filter(Boolean));
+  b.scrollTop = y;
+}
+
+const PANELS = {
+  info() {
+    return [
+      h('h3', {}, 'Maklumat program'),
+      ctl(S, 'perkara', 'Perkara / nama program', 'textarea', {rows: 2}),
+      h('div', {class: 'row'}, ctl(S, 'tarikh', 'Tarikh'), ctl(S, 'tempat', 'Tempat')),
+      ctl(S, 'siriPrefix', 'Awalan no. siri', 'text', {ph: 'cth: SJL/2026/'}),
+      h('div', {class: 'card'},
+        h('h3', {}, 'Kod yang boleh digunakan dalam teks'),
+        h('p', {class: 'hint'}, 'Taip kod ini dalam mana-mana teks di tab Teks. Ia akan diganti secara automatik untuk setiap peserta.'),
+        h('p', {class: 'hint'}, ...['{nama}', '{ic}', '{jawatan}', '{perkara}', '{tarikh}', '{tempat}', '{bil}', '{siri}']
+          .flatMap(k => [h('code', {}, k), ' '])),
+        h('p', {class: 'hint'}, 'Tebalkan sebahagian ayat dengan ', h('code', {}, '**teks**'), '. Tekan Enter untuk baris baru.')),
+      h('div', {class: 'card'},
+        h('h3', {}, 'Cara guna'),
+        h('ol', {class: 'hint', style: 'padding-left:18px;margin:0'},
+          h('li', {}, 'Isi maklumat program di atas.'),
+          h('li', {}, 'Masukkan senarai peserta di tab Peserta (boleh tampal dari Excel).'),
+          h('li', {}, 'Muat naik logo dan tandatangan mudir.'),
+          h('li', {}, 'Seret elemen di pratonton untuk susun.'),
+          h('li', {}, 'Tekan Muat Turun PDF atau Cetak Semua.'))),
+      armed(h('button', {class: 'btn danger small'}, 'Set semula semua'), 'Set semula semua', () => {
+        S = defaults(); sel = null; openCards.clear(); cur = 0; changed(); renderPanel(); toast('Semua tetapan dikembalikan ke asal.');
+      }),
+    ];
+  },
+
+  peserta() {
+    const bulk = h('textarea', {rows: 5, placeholder: 'Satu baris seorang: Nama, No K/P, Jawatan\nAli bin Abu, 900101-01-1111, Peserta\n\nBoleh tampal terus dari Excel / Google Sheets.'});
+    const list = h('div', {class: 'people'});
+    S.people.forEach((p, i) => {
+      const inp = (k, cls, ph) => {
+        const e = h('input', {class: cls, placeholder: ph, 'aria-label': ph});
+        e.value = p[k] || '';
+        e.addEventListener('input', () => { p[k] = e.value; if (i === cur) renderPreview(); else scheduleSave(); scheduleSave(); });
+        e.addEventListener('focus', () => { if (cur !== i) { cur = i; renderPreview(); } });
+        return e;
+      };
+      list.append(h('div', {class: 'person' + (i === cur ? ' cur' : ''), 'data-i': i},
+        h('span', {class: 'no'}, i + 1), inp('nama', 'nm', 'Nama'),
+        h('button', {class: 'del', title: 'Buang', 'aria-label': 'Buang ' + (p.nama || 'peserta'), onclick: () => {
+          S.people.splice(i, 1); if (cur >= S.people.length) cur = S.people.length - 1; changed(); renderPanel(); }}, '×'),
+        h('span'), inp('ic', 'ic', 'No. K/P'), inp('jawatan', 'jw', 'Jawatan')));
+    });
+    const add = replace => {
+      const rows = parseRows(bulk.value);
+      if (!rows.length) { toast('Tiada data untuk ditambah. Masukkan satu nama setiap baris.'); return; }
+      if (replace) { S.people = rows; cur = 0; } else S.people.push(...rows);
+      changed(); renderPanel(); toast(`${rows.length} peserta ${replace ? 'dimasukkan' : 'ditambah'}.`);
+    };
+    return [
+      h('h3', {}, 'Tambah pukal'),
+      bulk,
+      h('div', {class: 'btns', style: 'margin-top:8px'},
+        h('button', {class: 'btn small', onclick: () => add(false)}, 'Tambah ke senarai'),
+        h('button', {class: 'btn small', onclick: () => add(true)}, 'Ganti senarai'),
+        h('button', {class: 'btn small', onclick: () => pickFile('.csv,.txt,text/csv', async ([f]) => {
+          const rows = parseRows(await f.text()); S.people.push(...rows); changed(); renderPanel(); toast(`${rows.length} peserta diimport dari ${f.name}.`);
+        })}, 'Import CSV'),
+        h('button', {class: 'btn small', onclick: () => download(new Blob(['﻿Nama,No K/P,Jawatan\nAli bin Abu,900101-01-1111,Peserta\n'], {type: 'text/csv'}), 'contoh-peserta.csv')}, 'Contoh CSV')),
+      h('div', {style: 'display:flex;align-items:center;justify-content:space-between;margin:14px 0 6px'},
+        h('h3', {style: 'margin:0'}, `Senarai peserta (${S.people.length})`),
+        h('div', {class: 'btns', style: 'margin:0'},
+          h('button', {class: 'btn small', onclick: () => { S.people.push({nama: '', ic: '', jawatan: ''}); cur = S.people.length - 1; changed(); renderPanel();
+            const l = document.querySelectorAll('.person .nm'); l[l.length - 1]?.focus(); }}, '+ Seorang'),
+          S.people.length ? armed(h('button', {class: 'btn small danger'}, 'Kosongkan'), 'Kosongkan', () => { S.people = []; cur = 0; changed(); renderPanel(); }) : null)),
+      S.people.length ? null : h('p', {class: 'hint'}, 'Belum ada peserta. Tampal senarai di atas atau tekan "+ Seorang".'),
+      list,
+    ];
+  },
+
+  teks() {
+    return [
+      h('p', {class: 'hint'}, 'Klik teks pada pratonton untuk terus ke tetapannya. Kod seperti {nama} diganti mengikut peserta.'),
+      ...S.fields.map(f => card(f.id, f.label, f.visible ? '' : 'tersembunyi', [
+        f.custom ? ctl(f, 'label', 'Nama label') : null,
+        ctl(f, 'text', 'Teks', 'textarea', {rows: f.text.includes('\n') ? 3 : 2}),
+        h('div', {class: 'row'},
+          ctl(f, 'font', 'Fon', 'select', {options: FONTS}),
+          ctl(f, 'color', 'Warna', 'color')),
+        rng(f, 'size', 'Saiz fon (px)', 6, 140, 1),
+        h('div', {class: 'checks'},
+          ctl(f, 'bold', 'Tebal', 'check'), ctl(f, 'italic', 'Condong', 'check'),
+          ctl(f, 'upper', 'HURUF BESAR', 'check'), ctl(f, 'visible', 'Papar', 'check', {after: () => renderPanel()})),
+        h('div', {class: 'row'},
+          ctl(f, 'align', 'Jajaran', 'select', {options: [['center', 'Tengah'], ['left', 'Kiri'], ['right', 'Kanan']]}),
+          ctl(f, 'ls', 'Jarak huruf (px)', 'number', {step: 0.5})),
+        rng(f, 'w', 'Lebar kotak teks (%)', 5, 100, 1),
+        pos(f),
+        h('div', {class: 'btns', style: 'margin:0'},
+          h('button', {class: 'btn small', onclick: () => { setPos(f, null, 50, f.y); changed(); }}, 'Tengahkan'),
+          f.custom ? h('button', {class: 'btn small danger', onclick: () => { S.fields = S.fields.filter(x => x !== f); sel = null; changed(); renderPanel(); }}, 'Padam teks') : null),
+      ])),
+      h('button', {class: 'btn', onclick: () => {
+        const f = fld({label: 'Teks tambahan ' + (S.fields.filter(x => x.custom).length + 1), custom: true, y: 50});
+        S.fields.push(f); openCards.add(f.id); sel = {kind: 'field', id: f.id}; changed(); renderPanel();
+      }}, '+ Tambah teks'),
+    ];
+  },
+
+  logo() {
+    autoOpen(S.logos);
+    const upload = l => pickFile('image/*', async ([f]) => {
+      try { l.src = await readImage(f, {max: 900}); changed(); renderPanel(); } catch (e) { toast(e.message); }
+    });
+    const quick = (l, x, y) => h('button', {class: 'btn small', onclick: () => { setPos(l, null, x, y); changed(); }});
+    return [
+      h('p', {class: 'hint'}, 'Tambah seberapa banyak logo yang perlu. Seret logo di pratonton, atau guna butang kedudukan pantas. Gambar PNG berlatar lutsinar paling cantik.'),
+      ...S.logos.map((l, i) => card(l.id, 'Logo ' + (i + 1), l.src ? '' : 'belum dimuat naik', [
+        h('div', {style: 'display:flex;gap:10px;align-items:center;margin-bottom:10px'},
+          l.src ? h('img', {class: 'thumb', src: l.src, alt: ''}) : h('div', {class: 'thumb'}),
+          h('div', {class: 'btns', style: 'margin:0'},
+            h('button', {class: 'btn small', onclick: () => upload(l)}, l.src ? 'Tukar gambar' : 'Muat naik gambar'),
+            h('button', {class: 'btn small danger', onclick: () => { S.logos = S.logos.filter(x => x !== l); sel = null; changed(); renderPanel(); }}, 'Buang'))),
+        rng(l, 'w', 'Saiz (lebar % sijil)', 2, 60, 0.5),
+        rng(l, 'op', 'Kelegapan', 0.05, 1, 0.05),
+        pos(l),
+        h('div', {class: 'btns', style: 'margin:0'},
+          [['Kiri atas', 13, 13], ['Tengah atas', 50, 12.5], ['Kanan atas', 87, 13], ['Tera air tengah', 50, 50]]
+            .map(([t, x, y]) => { const b = quick(l, x, y); b.textContent = t; if (t.startsWith('Tera')) b.addEventListener('click', () => { l.w = 40; l.op = 0.08; changed(); renderPanel(); }); return b; })),
+      ])),
+      h('button', {class: 'btn', onclick: () => pickFile('image/*', async files => {
+        for (const f of files) {
+          try {
+            const n = S.logos.length, l = {id: uid(), src: await readImage(f, {max: 900}), x: [50, 13, 87, 30, 70][n % 5], y: 12.5, w: 9, op: 1};
+            S.logos.push(l); openCards.add(l.id);
+          } catch (e) { toast(e.message); }
+        }
+        changed(); renderPanel();
+      }, true)}, '+ Tambah logo'),
+    ];
+  },
+
+  ttd() {
+    autoOpen(S.signs);
+    return [
+      h('p', {class: 'hint'}, 'Muat naik gambar tandatangan (imbasan atau foto). Pilih "Buang latar putih" supaya kertas putih jadi lutsinar. Tambah blok kedua jika ada dua penandatangan.'),
+      ...S.signs.map((s, i) => {
+        const rw = h('input', {type: 'checkbox', checked: true});
+        return card(s.id, 'Penandatangan ' + (i + 1), s.nama, [
+          h('div', {style: 'display:flex;gap:10px;align-items:center;margin-bottom:8px'},
+            s.src ? h('img', {class: 'thumb', src: s.src, alt: ''}) : h('div', {class: 'thumb'}),
+            h('div', {},
+              h('div', {class: 'btns', style: 'margin:0 0 6px'},
+                h('button', {class: 'btn small', onclick: () => pickFile('image/*', async ([f]) => {
+                  try { s.src = await readImage(f, {max: 900, removeWhite: rw.checked}); changed(); renderPanel(); } catch (e) { toast(e.message); }
+                })}, s.src ? 'Tukar tandatangan' : 'Muat naik tandatangan'),
+                s.src ? h('button', {class: 'btn small danger', onclick: () => { s.src = null; changed(); renderPanel(); }}, 'Buang') : null),
+              h('label', {class: 'f chk', style: 'margin:0'}, rw, 'Buang latar putih'))),
+          ctl(s, 'nama', 'Nama mudir / penandatangan'),
+          h('div', {class: 'row'}, ctl(s, 'jawatan', 'Jawatan'), ctl(s, 'org', 'Institusi (pilihan)')),
+          h('div', {class: 'row'}, ctl(s, 'font', 'Fon', 'select', {options: FONTS}), ctl(s, 'color', 'Warna', 'color')),
+          rng(s, 'size', 'Saiz fon nama (px)', 8, 40, 1),
+          rng(s, 'imgH', 'Tinggi tandatangan (px)', 20, 200, 1),
+          rng(s, 'w', 'Lebar blok (%)', 8, 60, 1),
+          h('div', {class: 'checks'}, ctl(s, 'line', 'Garis tandatangan', 'check')),
+          pos(s),
+          h('div', {class: 'btns', style: 'margin:0'},
+            ...[['Kiri', 25], ['Tengah', 50], ['Kanan', 75]].map(([t, x]) => h('button', {class: 'btn small', onclick: () => { setPos(s, null, x, s.y); changed(); }}, t)),
+            h('button', {class: 'btn small danger', onclick: () => { S.signs = S.signs.filter(x => x !== s); sel = null; changed(); renderPanel(); }}, 'Padam blok')),
+        ]);
+      }),
+      h('button', {class: 'btn', onclick: () => {
+        if (S.signs.length === 1 && S.signs[0].x === 50) setPos(S.signs[0], null, 27, S.signs[0].y);
+        const s = {id: uid(), src: null, x: S.signs.length ? 73 : 50, y: 87, w: 26, imgH: 62, nama: 'Nama Penandatangan', jawatan: 'Pengarah Program', org: '',
+          size: 15, font: 'Montserrat', color: '#1c2a27', line: true};
+        S.signs.push(s); openCards.add(s.id); changed(); renderPanel();
+      }}, '+ Tambah penandatangan'),
+    ];
+  },
+
+  latar() {
+    const PRESETS = [
+      ['Hijau & emas', '#b8892b', '#fffdf6', '#0f5c4d'], ['Biru diraja', '#1f3c88', '#f7f9ff', '#1f3c88'],
+      ['Marun', '#7a1f2b', '#fffaf5', '#7a1f2b'], ['Hitam klasik', '#222222', '#ffffff', '#111111'], ['Ungu', '#5b3a8c', '#fcfaff', '#5b3a8c'],
+    ];
+    return [
+      h('h3', {}, 'Kertas'),
+      ctl(S, 'orientation', 'Orientasi A4', 'select', {options: [['landscape', 'Melintang (landskap)'], ['portrait', 'Menegak (potret)']],
+        after: () => { $('#pageStyle').textContent = `@page{size:A4 ${S.orientation};margin:0}`; }}),
+      h('h3', {}, 'Bingkai'),
+      h('div', {class: 'row'},
+        ctl(S, 'border', 'Gaya bingkai', 'select', {options: [['klasik', 'Klasik (garis berganda)'], ['elegan', 'Elegan (bucu)'], ['moden', 'Moden (jalur)'], ['tebal', 'Tebal'], ['garis', 'Garis nipis'], ['tiada', 'Tiada']]}),
+        ctl(S, 'borderColor', 'Warna bingkai', 'color')),
+      ctl(S, 'bgColor', 'Warna latar', 'color'),
+      h('h3', {}, 'Tema warna pantas'),
+      h('div', {class: 'btns'}, PRESETS.map(([n, b, bg, t]) => h('button', {class: 'btn small', onclick: () => {
+        S.borderColor = b; S.bgColor = bg;
+        S.fields.forEach(f => { if (['tajuk', 'jawatan'].includes(f.id)) f.color = t; });
+        changed(); renderPanel();
+      }}, h('span', {style: `width:12px;height:12px;border-radius:50%;background:${b};display:inline-block`}), n))),
+      h('h3', {}, 'Gambar latar (pilihan)'),
+      h('p', {class: 'hint'}, 'Guna reka bentuk sijil sedia ada (JPG/PNG saiz A4) sebagai latar. Pilih bingkai "Tiada" jika latar sudah ada bingkai.'),
+      h('div', {class: 'btns'},
+        h('button', {class: 'btn small', onclick: () => pickFile('image/*', async ([f]) => {
+          try { S.bgImage = await readImage(f, {max: 2400, jpeg: true}); changed(); renderPanel(); } catch (e) { toast(e.message); }
+        })}, S.bgImage ? 'Tukar gambar latar' : 'Muat naik gambar latar'),
+        S.bgImage ? h('button', {class: 'btn small danger', onclick: () => { S.bgImage = null; changed(); renderPanel(); }}, 'Buang latar') : null),
+    ];
+  },
+};
+
+function parseRows(txt) {
+  const out = [];
+  String(txt).replace(/^﻿/, '').split(/\r?\n/).forEach((line, idx) => {
+    if (!line.trim()) return;
+    let cells;
+    if (line.includes('\t')) cells = line.split('\t');
+    else if (line.includes('|')) cells = line.split('|');
+    else if (line.includes(';')) cells = line.split(';');
+    else cells = splitCsv(line);
+    cells = cells.map(c => c.trim().replace(/^"|"$/g, '').trim());
+    if (idx === 0 && /^nama$/i.test(cells[0])) return; // baris tajuk
+    if (!cells[0]) return;
+    out.push({nama: cells[0], ic: cells[1] || '', jawatan: cells[2] || ''});
+  });
+  return out;
+}
+function splitCsv(line) {
+  const r = []; let c = '', q = false;
+  for (const ch of line) {
+    if (ch === '"') q = !q;
+    else if (ch === ',' && !q) { r.push(c); c = ''; }
+    else c += ch;
+  }
+  r.push(c); return r;
+}
+
+/* ================= Eksport ================= */
+function waitImgs(root) {
+  return Promise.all([...root.querySelectorAll('img')].map(i => i.complete ? (i.decode ? i.decode().catch(() => {}) : 0) : new Promise(r => { i.onload = i.onerror = r; })));
+}
+function progress(total) {
+  const bar = h('progress', {max: total, value: 0}), txt = h('div', {}, 'Menyediakan…');
+  const o = h('div', {class: 'overlay'}, h('div', {class: 'box'}, h('strong', {}, 'Menjana sijil'), txt, bar));
+  document.body.append(o);
+  return {set(i) { bar.value = i; txt.textContent = `${i} / ${total}`; }, done() { o.remove(); }};
+}
+async function certCanvas(i) {
+  const host = $('#offscreen');
+  const c = renderCert(person(i), i, false);
+  host.replaceChildren(c);
+  await waitImgs(c);
+  const cv = await html2canvas(c, {scale: 2, backgroundColor: S.bgColor, useCORS: true, logging: false});
+  host.replaceChildren();
+  return cv;
+}
+function needPeople() {
+  if (!S.people.length) { toast('Tambah sekurang-kurangnya seorang peserta dahulu.'); setTab('peserta'); return false; }
+  if (!window.html2canvas || !window.jspdf) { toast('Pustaka PDF tidak dapat dimuatkan. Pastikan folder "lib" berada bersama index.html.', 5000); return false; }
+  return true;
+}
+const pdfFmt = () => ({orientation: S.orientation, unit: 'mm', format: 'a4', compress: true});
+const pageMM = () => S.orientation === 'portrait' ? [210, 297] : [297, 210];
+
+async function exportPdf() {
+  if (!needPeople()) return;
+  await document.fonts.ready;
+  const n = S.people.length, pg = progress(n), [pw, ph] = pageMM();
+  try {
+    const pdf = new jspdf.jsPDF(pdfFmt());
+    for (let i = 0; i < n; i++) {
+      const cv = await certCanvas(i);
+      if (i) pdf.addPage('a4', S.orientation);
+      pdf.addImage(cv.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pw, ph, undefined, 'FAST');
+      pg.set(i + 1);
+    }
+    pdf.save(`sijil-${slug(S.perkara)}.pdf`);
+    toast(`${n} sijil disimpan dalam satu PDF.`);
+  } catch (e) { console.error(e); toast('Gagal menjana PDF: ' + e.message, 5000); }
+  finally { pg.done(); }
+}
+async function exportZip() {
+  if (!needPeople()) return;
+  if (!window.JSZip) { toast('Pustaka ZIP tidak dapat dimuatkan.'); return; }
+  await document.fonts.ready;
+  const n = S.people.length, pg = progress(n), [pw, ph] = pageMM(), zip = new JSZip(), used = {};
+  try {
+    for (let i = 0; i < n; i++) {
+      const cv = await certCanvas(i), pdf = new jspdf.jsPDF(pdfFmt());
+      pdf.addImage(cv.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pw, ph, undefined, 'FAST');
+      let name = `${String(i + 1).padStart(3, '0')}-${slug(person(i).nama)}`;
+      used[name] = (used[name] || 0) + 1; if (used[name] > 1) name += '-' + used[name];
+      zip.file(name + '.pdf', pdf.output('arraybuffer'));
+      pg.set(i + 1);
+    }
+    download(await zip.generateAsync({type: 'blob'}), `sijil-${slug(S.perkara)}.zip`);
+    toast(`${n} fail PDF dimuatkan dalam ZIP.`);
+  } catch (e) { console.error(e); toast('Gagal menjana ZIP: ' + e.message, 5000); }
+  finally { pg.done(); }
+}
+async function printAll() {
+  if (!S.people.length) { toast('Tambah sekurang-kurangnya seorang peserta dahulu.'); setTab('peserta'); return; }
+  const area = $('#printArea');
+  area.replaceChildren(...S.people.map((p, i) => renderCert(p, i, false)));
+  $('#pageStyle').textContent = `@page{size:A4 ${S.orientation};margin:0}`;
+  await Promise.all([waitImgs(area), document.fonts.ready]);
+  window.print();
+}
+window.addEventListener('afterprint', () => $('#printArea').replaceChildren());
+
+/* ================= Templat fail ================= */
+$('#btnSaveTpl').onclick = () => download(new Blob([JSON.stringify(S, null, 1)], {type: 'application/json'}), `templat-sijil-${slug(S.perkara)}.json`);
+$('#btnLoadTpl').onclick = () => $('#tplFile').click();
+$('#tplFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { S = merge(JSON.parse(await f.text())); sel = null; cur = 0; openCards.clear();
+    $('#pageStyle').textContent = `@page{size:A4 ${S.orientation};margin:0}`; changed(); renderPanel(); toast('Templat dibuka: ' + f.name); }
+  catch (err) { toast('Fail templat tidak sah. Pilih fail .json yang disimpan dari aplikasi ini.', 5000); }
+  e.target.value = '';
+};
+$('#btnPdf').onclick = exportPdf;
+$('#btnZip').onclick = exportZip;
+$('#btnPrint').onclick = printAll;
+$('#prev').onclick = () => { if (S.people.length) { cur = (cur - 1 + S.people.length) % S.people.length; renderPreview(); } };
+$('#next').onclick = () => { if (S.people.length) { cur = (cur + 1) % S.people.length; renderPreview(); } };
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) setTab(b.dataset.tab); });
+window.addEventListener('resize', () => renderPreview());
+
+/* ================= Mula ================= */
+$('#pageStyle').textContent = `@page{size:A4 ${S.orientation};margin:0}`;
+try { const t = localStorage.getItem(KEY + '-tab'); if (t && PANELS[t]) tab = t; } catch (e) {}
+setTab(tab);
+renderPreview();
+document.fonts && document.fonts.ready.then(() => renderPreview());
+</script>
+</body>
+</html>

@@ -89,7 +89,8 @@ input[type=range]{padding:0;accent-color:var(--accent)}
 .cert .fr{position:absolute;pointer-events:none}
 .cert .el{position:absolute;transform:translate(-50%,-50%);white-space:normal;overflow-wrap:break-word}
 .cert .logo{height:auto;display:block}
-.cert .ph{border:2px dashed #9aa8a3;color:#7d8b86;display:flex;align-items:center;justify-content:center;font:600 13px var(--ui);aspect-ratio:1/1;border-radius:50%}
+.cert .ph{border:2px dashed #9aa8a3;color:#7d8b86;display:flex;align-items:center;justify-content:center;text-align:center;font:600 13px var(--ui);aspect-ratio:1/1;border-radius:50%}
+.cert .ph.rect{aspect-ratio:3/1;border-radius:8px}
 .cert .sign{text-align:center}
 .cert .sign .simg{display:block;margin:0 auto;max-width:100%;object-fit:contain}
 .cert .sign .sph{border:1.5px dashed #b6c0bc;color:#98a5a0;display:flex;align-items:center;justify-content:center;font:500 12px var(--ui);margin:0 auto;width:70%}
@@ -229,6 +230,47 @@ function defaults() {
   };
 }
 const KEY = 'penjana-sijil-v1';
+
+/* Templat sedia: Sijil Jawatankuasa — 2 logo bulat di atas, khat di tengah-tengah */
+function presetJawatankuasa() {
+  const d = defaults();
+  return {
+    orientation: 'landscape', border: 'klasik', borderColor: '#b8892b', bgColor: '#fffdf6', bgImage: null,
+    perkara: 'Jawatankuasa Pentadbiran Pondok Luar Sesi 2027', tarikh: '1 Januari 2027', tempat: 'Madrasah Misbahul Falah',
+    siriPrefix: 'MMF/JK/2027/',
+    fields: [
+      fld({id: 'khat', label: 'Khat (teks Arab, ganti gambar)', text: 'بسم الله الرحمن الرحيم', y: 13, w: 34, size: 34, font: 'Amiri', bold: true, color: '#0f5c4d', lh: 1.4, visible: false}),
+      fld({id: 'institusi', label: 'Nama institusi', text: 'MADRASAH MISBAHUL FALAH', y: 24.5, w: 70, size: 22, font: 'Cinzel', bold: true, color: '#0f5c4d', ls: 3, lh: 1.2, custom: true}),
+      fld({id: 'tajuk', label: 'Tajuk', text: 'SIJIL PELANTIKAN', y: 32, w: 80, size: 46, font: 'Cinzel', bold: true, color: '#b8892b', ls: 4, lh: 1.15}),
+      fld({id: 'intro', label: 'Ayat pembuka', text: 'Dengan ini disahkan bahawa', y: 39.5, w: 70, size: 18, italic: true, color: '#3b4a46'}),
+      fld({id: 'nama', label: 'Nama', text: '{nama}', y: 46.5, w: 88, size: 30, font: 'Playfair Display', bold: true, color: '#1c2a27', ls: 1, lh: 1.15}),
+      fld({id: 'ic', label: 'No. K/P', text: 'No. K/P: {ic}', y: 52.5, w: 50, size: 15, font: 'Montserrat', color: '#3b4a46', ls: 1}),
+      fld({id: 'dilantik', label: 'Ayat pelantikan', text: 'telah dilantik sebagai', y: 58, w: 60, size: 17, italic: true, color: '#3b4a46', custom: true}),
+      fld({id: 'jawatan', label: 'Jawatan', text: '{jawatan}', y: 63.5, w: 90, size: 21, font: 'Montserrat', bold: true, upper: true, color: '#0f5c4d', ls: 1.5, lh: 1.2}),
+      fld({id: 'perkara', label: 'Perkara', text: 'bagi **{perkara}**', y: 70, w: 85, size: 17, color: '#1c2a27'}),
+      fld({id: 'tarikh', label: 'Tarikh', text: 'Tarikh: {tarikh}', x: 20, y: 90, w: 24, size: 12, font: 'Montserrat', color: '#5c6b66', align: 'left'}),
+      fld({id: 'siri', label: 'No. siri', text: 'No. Siri: {siri}', x: 80, y: 90, w: 24, size: 12, font: 'Montserrat', color: '#5c6b66', align: 'right'}),
+    ],
+    logos: [
+      {id: uid(), src: null, x: 15, y: 14, w: 10.5, op: 1, label: 'LOGO KIRI'},
+      {id: uid(), src: null, x: 50, y: 13, w: 30, op: 1, label: 'KHAT', shape: 'rect'},
+      {id: uid(), src: null, x: 85, y: 14, w: 10.5, op: 1, label: 'LOGO KANAN'},
+    ],
+    signs: [{id: uid(), src: null, x: 50, y: 84.5, w: 40, imgH: 50, nama: 'USTAZ MD MUKHTAR BIN TUAN GURU HAJI OMAR ZUHDI',
+             jawatan: 'Pengetua / Tuan Mudir', org: 'Madrasah Misbahul Falah', size: 13, font: 'Montserrat', color: '#1c2a27', line: true}],
+    people: d.people,
+  };
+}
+function applyPreset(fn) {
+  const keepPeople = S.people, keepLogos = S.logos.filter(l => l.src);
+  S = merge(fn());
+  S.people = keepPeople;
+  // guna semula gambar logo yang sudah dimuat naik, ikut urutan slot
+  S.logos.forEach((l, i) => { if (keepLogos[i]) l.src = keepLogos[i].src; });
+  sel = null; openCards.clear(); cur = 0;
+  $('#pageStyle').textContent = `@page{size:A4 ${S.orientation};margin:0}`;
+  changed(); renderPanel();
+}
 let S = load();
 let tab = 'info', cur = 0, sel = null, scale = 1, saveTimer, warnedStorage = false;
 const openCards = new Set(), autoOpened = new Set();
@@ -320,7 +362,7 @@ function renderCert(p, i, editable) {
   S.logos.forEach(l => {
     const st = `left:${l.x}%;top:${l.y}%;width:${l.w}%;opacity:${l.op ?? 1}`;
     if (l.src) c.append(h('img', {class: 'el logo', src: l.src, alt: 'Logo', style: st, 'data-kind': 'logo', 'data-id': l.id, draggable: 'false'}));
-    else if (editable) c.append(h('div', {class: 'el logo ph', style: st, 'data-kind': 'logo', 'data-id': l.id}, 'LOGO'));
+    else if (editable) c.append(h('div', {style: st, 'data-kind': 'logo', 'data-id': l.id, class: 'el logo ph' + (l.shape === 'rect' ? ' rect' : '')}, l.label || 'LOGO'));
   });
 
   S.fields.filter(f => f.visible).forEach(f => {
@@ -472,6 +514,13 @@ function renderPanel() {
 const PANELS = {
   info() {
     return [
+      h('div', {class: 'card'},
+        h('h3', {}, 'Templat sedia'),
+        h('p', {class: 'hint'}, 'Reka bentuk siap susun. Senarai peserta anda tidak akan terusik.'),
+        h('div', {class: 'btns', style: 'margin:0'},
+          armed(h('button', {class: 'btn small'}, 'Sijil Jawatankuasa (2 logo + khat)'), 'Sijil Jawatankuasa (2 logo + khat)', () => {
+            applyPreset(presetJawatankuasa); toast('Templat Sijil Jawatankuasa digunakan. Muat naik logo & khat di tab Logo.', 4000); }),
+          armed(h('button', {class: 'btn small'}, 'Asal (1 logo)'), 'Asal (1 logo)', () => { applyPreset(defaults); toast('Templat asal digunakan.'); }))),
       h('h3', {}, 'Maklumat program'),
       ctl(S, 'perkara', 'Perkara / nama program', 'textarea', {rows: 2}),
       h('div', {class: 'row'}, ctl(S, 'tarikh', 'Tarikh'), ctl(S, 'tempat', 'Tempat')),
@@ -571,13 +620,14 @@ const PANELS = {
 
   logo() {
     autoOpen(S.logos);
+    S.logos.forEach(l => { if (!l.src && !autoOpened.has(l.id)) { autoOpened.add(l.id); openCards.add(l.id); } });
     const upload = l => pickFile('image/*', async ([f]) => {
       try { l.src = await readImage(f, {max: 900}); changed(); renderPanel(); } catch (e) { toast(e.message); }
     });
     const quick = (l, x, y) => h('button', {class: 'btn small', onclick: () => { setPos(l, null, x, y); changed(); }});
     return [
       h('p', {class: 'hint'}, 'Tambah seberapa banyak logo yang perlu. Seret logo di pratonton, atau guna butang kedudukan pantas. Gambar PNG berlatar lutsinar paling cantik.'),
-      ...S.logos.map((l, i) => card(l.id, 'Logo ' + (i + 1), l.src ? '' : 'belum dimuat naik', [
+      ...S.logos.map((l, i) => card(l.id, l.label ? l.label[0] + l.label.slice(1).toLowerCase() : 'Logo ' + (i + 1), l.src ? '' : 'belum dimuat naik', [
         h('div', {style: 'display:flex;gap:10px;align-items:center;margin-bottom:10px'},
           l.src ? h('img', {class: 'thumb', src: l.src, alt: ''}) : h('div', {class: 'thumb'}),
           h('div', {class: 'btns', style: 'margin:0'},
